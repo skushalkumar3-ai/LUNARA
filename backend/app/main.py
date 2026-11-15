@@ -36,4 +36,25 @@ def health_check() -> dict[str, str]:
 
 
 app.include_router(space_weather_router)
-logger.info("LUNARA FastAPI routes: %s", sorted(app.openapi()["paths"]))
+
+
+def _registered_route_details() -> list[str]:
+    details: list[str] = []
+
+    def collect(routes) -> None:
+        for route in routes:
+            path = getattr(route, "path", None)
+            methods = getattr(route, "methods", None)
+            if path is not None and methods:
+                for method in sorted(methods):
+                    details.append(f"{method} {path}")
+
+            included_router = getattr(route, "original_router", None)
+            if included_router is not None:
+                collect(included_router.routes)
+
+    collect(app.routes)
+    return sorted(set(details))
+
+
+logger.info("LUNARA registered routes:\n%s", "\n".join(_registered_route_details()))

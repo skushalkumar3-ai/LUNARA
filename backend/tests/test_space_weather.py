@@ -18,6 +18,54 @@ class SpaceWeatherRouteTests(unittest.TestCase):
         self.start_date = (today - timedelta(days=1)).isoformat()
         self.end_date = today.isoformat()
 
+    def test_root_and_api_documentation_endpoints(self) -> None:
+        for path in ("/", "/api/health", "/openapi.json", "/docs", "/redoc"):
+            with self.subTest(path=path):
+                self.assertNotEqual(self.client.get(path).status_code, 404)
+
+        root = self.client.get("/")
+        health = self.client.get("/api/health")
+        self.assertEqual(root.status_code, 200)
+        self.assertEqual(root.json()["status"], "ok")
+        self.assertEqual(health.status_code, 200)
+        self.assertEqual(health.json()["service"], "lunara-api")
+
+        schema = self.client.get("/openapi.json")
+        self.assertEqual(schema.status_code, 200)
+        for path in (
+            "/",
+            "/api/health",
+            "/api/space-weather",
+            "/api/space-weather/flares",
+            "/api/space-weather/solar-particles",
+            "/api/space-weather/geomagnetic-storms",
+            "/api/space-weather/cme",
+        ):
+            with self.subTest(openapi_path=path):
+                self.assertIn(path, schema.json()["paths"])
+
+    def test_each_space_weather_route_is_reachable_without_nasa(self) -> None:
+        async def no_events(_event_type, _start_date, _end_date):
+            return []
+
+        with patch.object(
+            nasa_service, "_fetch_from_nasa", new=AsyncMock(side_effect=no_events)
+        ):
+            for path in (
+                "/api/space-weather",
+                "/api/space-weather/flares",
+                "/api/space-weather/solar-particles",
+                "/api/space-weather/geomagnetic-storms",
+                "/api/space-weather/cme",
+            ):
+                with self.subTest(path=path):
+                    response = self.client.get(
+                        path,
+                        params={"startDate": self.start_date, "endDate": self.end_date},
+                    )
+                    self.assertNotEqual(response.status_code, 404, path)
+                    self.assertEqual(response.status_code, 200, path)
+
     def test_health_and_each_space_weather_endpoint(self) -> None:
         records = {
             EventType.FLARE: {
