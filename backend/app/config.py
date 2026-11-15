@@ -13,6 +13,7 @@ class Settings:
 
 
 def get_settings() -> Settings:
+    production_frontend_origin = "https://lunara-mission-trainer.onrender.com"
     raw_origins = os.getenv(
         "LUNARA_FRONTEND_ORIGINS",
         "http://localhost:5173,http://127.0.0.1:5173,"
@@ -20,4 +21,6 @@ def get_settings() -> Settings:
         "https://lunara-mission-trainer.onrender.com",
     )
     origins = tuple(origin.strip() for origin in raw_origins.split(",") if origin.strip())
+    if production_frontend_origin not in origins:
+        origins = (*origins, production_frontend_origin)
     return Settings(allowed_origins=origins)

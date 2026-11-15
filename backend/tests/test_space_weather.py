@@ -1,3 +1,4 @@
+import os
 import unittest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, patch
@@ -8,6 +9,7 @@ from fastapi.testclient import TestClient
 from app import main
 from app.services import nasa_service
 from app.services.nasa_service import EventType
+from app.config import get_settings
 
 
 class SpaceWeatherRouteTests(unittest.TestCase):
@@ -57,6 +59,32 @@ class SpaceWeatherRouteTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers.get("access-control-allow-origin"), origin)
+
+    def test_cors_does_not_allow_similar_unconfigured_origin(self) -> None:
+        origin = "https://lunara-mission-trainer.onrender.com.attacker.invalid"
+        with patch.object(
+            nasa_service, "_fetch_from_nasa", new=AsyncMock(return_value=[])
+        ):
+            response = self.client.get(
+                "/api/space-weather",
+                params={"startDate": self.start_date, "endDate": self.end_date},
+                headers={"Origin": origin},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.headers.get("access-control-allow-origin"))
+
+    def test_production_frontend_remains_allowed_with_environment_override(self) -> None:
+        with patch.dict(
+            os.environ,
+            {"LUNARA_FRONTEND_ORIGINS": "http://localhost:5173"},
+        ):
+            settings = get_settings()
+
+        self.assertIn(
+            "https://lunara-mission-trainer.onrender.com", settings.allowed_origins
+        )
+        self.assertIn("http://localhost:5173", settings.allowed_origins)
 
     def test_each_space_weather_route_is_reachable_without_nasa(self) -> None:
         async def no_events(_event_type, _start_date, _end_date):

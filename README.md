@@ -32,7 +32,7 @@ The Vite development and preview servers proxy `/api` requests to the local Fast
 
 The frontend defaults to the production LUNARA API when built for production. Set `VITE_API_BASE_URL=https://lunara-api-vmwk.onrender.com/api` in the frontend host's build environment to configure it explicitly. For local development, the default `/api` path uses the Vite proxy to `http://127.0.0.1:8000`; `frontend/.env.example` shows the optional direct local API override.
 
-The backend default CORS allowlist includes `https://lunara-mission-trainer.onrender.com` and the local development origins. If `LUNARA_FRONTEND_ORIGINS` is set in Render, include that frontend origin (scheme and hostname only, no path) in the comma-separated value so it is not replaced by a local-only allowlist.
+The backend CORS allowlist always includes `https://lunara-mission-trainer.onrender.com`; `LUNARA_FRONTEND_ORIGINS` adds the configured local or additional origins. Render free instances can sleep after inactivity, so the dashboard retries failed API and NASA requests with backoff while clearly showing demo mode until live data is available.
 
 ## Mission flow
 

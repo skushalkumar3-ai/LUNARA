@@ -235,40 +235,76 @@ export default function OutpostDashboard({ challengeActive = false, panelRevealA
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchBackendHealth(controller.signal)
-      .then(() => setBackendStatus("connected"))
-      .catch((error: unknown) => {
+    let retryTimer: number | undefined;
+    let retryDelay = 5000;
+
+    const checkBackend = async () => {
+      try {
+        await fetchBackendHealth(controller.signal);
+        if (controller.signal.aborted) return;
+        setBackendStatus("connected");
+      } catch (error: unknown) {
         if (controller.signal.aborted) return;
         console.error("LUNARA API health check failed:", error);
         setBackendStatus("offline");
-      });
+        retryTimer = window.setTimeout(() => void checkBackend(), retryDelay);
+        retryDelay = Math.min(retryDelay * 2, 30000);
+      }
+    };
 
-    return () => controller.abort();
+    void checkBackend();
+
+    return () => {
+      controller.abort();
+      if (retryTimer !== undefined) window.clearTimeout(retryTimer);
+    };
   }, []);
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchSpaceWeather(controller.signal)
-      .then((response) => {
+    let retryTimer: number | undefined;
+    let retryDelay = 5000;
+
+    const loadSpaceWeather = async () => {
+      try {
+        const response = await fetchSpaceWeather(controller.signal);
+        if (controller.signal.aborted) return;
         setSpaceWeather(response);
-        if (response.api_status === "unavailable") {
-          setSpaceWeatherError(
-            Object.values(response.errors)[0] ?? "NASA DONKI is unavailable."
+        setSpaceWeatherError(null);
+        if (response.api_status !== "live") {
+          if (response.api_status === "unavailable") {
+            setSpaceWeatherError(
+              Object.values(response.errors)[0] ?? "NASA DONKI is unavailable."
+            );
+          }
+          retryTimer = window.setTimeout(
+            () => void loadSpaceWeather(),
+            retryDelay
           );
+          retryDelay = Math.min(retryDelay * 2, 30000);
         }
-      })
-      .catch((error: unknown) => {
+      } catch (error: unknown) {
         if (controller.signal.aborted) return;
         console.error("NASA space-weather request failed:", error);
         setSpaceWeatherError(
           error instanceof Error ? error.message : "NASA DONKI is unavailable."
         );
-      })
-      .finally(() => {
+        retryTimer = window.setTimeout(
+          () => void loadSpaceWeather(),
+          retryDelay
+        );
+        retryDelay = Math.min(retryDelay * 2, 30000);
+      } finally {
         if (!controller.signal.aborted) setSpaceWeatherLoading(false);
-      });
+      }
+    };
 
-    return () => controller.abort();
+    void loadSpaceWeather();
+
+    return () => {
+      controller.abort();
+      if (retryTimer !== undefined) window.clearTimeout(retryTimer);
+    };
   }, []);
 
   const revealClass = (step: number) => panelRevealActive ? `dashboard-reveal dashboard-reveal--${step}` : "";
