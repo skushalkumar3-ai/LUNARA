@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "./apiBaseUrl";
+
 export type SpaceWeatherEventType = "FLR" | "SEP" | "GST" | "CME";
 export type SpaceWeatherApiStatus = "live" | "partial" | "unavailable";
 
@@ -24,11 +26,6 @@ export interface SpaceWeatherDateRange {
   startDate?: string;
   endDate?: string;
 }
-
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "/api").replace(
-  /\/$/,
-  ""
-);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;

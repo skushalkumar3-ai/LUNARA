@@ -28,6 +28,12 @@ npm run dev
 
 The Vite development and preview servers proxy `/api` requests to the local FastAPI service. The simulation and mission store run in the browser. The API provides `/api/health` and NASA DONKI space-weather endpoints. Copy `backend\.env.example` to `backend\.env` for local configuration; the current official [CCMC DONKI API](https://ccmc.gsfc.nasa.gov/DONKI/api/) does not require an API key.
 
+## Production deployment configuration
+
+The frontend defaults to the production LUNARA API when built for production. Set `VITE_API_BASE_URL=https://lunara-api-vmwk.onrender.com/api` in the frontend host's build environment to configure it explicitly. For local development, the default `/api` path uses the Vite proxy to `http://127.0.0.1:8000`; `frontend/.env.example` shows the optional direct local API override.
+
+In the Render backend environment, set `LUNARA_FRONTEND_ORIGINS` to the exact deployed frontend origin (scheme and hostname only, with no path), for example `https://your-frontend-host.example`. Add comma-separated origins only if multiple frontends need access. The backend defaults to local development origins, so this Render setting is needed for browser requests from the deployed frontend.
+
 ## Mission flow
 
 After the five-point orientation, LUNARA runs a 15-second countdown before each event:
