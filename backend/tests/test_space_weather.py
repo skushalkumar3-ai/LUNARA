@@ -44,6 +44,20 @@ class SpaceWeatherRouteTests(unittest.TestCase):
             with self.subTest(openapi_path=path):
                 self.assertIn(path, schema.json()["paths"])
 
+    def test_deployed_frontend_origin_is_allowed_by_cors(self) -> None:
+        origin = "https://lunara-mission-trainer.onrender.com"
+        with patch.object(
+            nasa_service, "_fetch_from_nasa", new=AsyncMock(return_value=[])
+        ):
+            response = self.client.get(
+                "/api/space-weather",
+                params={"startDate": self.start_date, "endDate": self.end_date},
+                headers={"Origin": origin},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers.get("access-control-allow-origin"), origin)
+
     def test_each_space_weather_route_is_reachable_without_nasa(self) -> None:
         async def no_events(_event_type, _start_date, _end_date):
             return []

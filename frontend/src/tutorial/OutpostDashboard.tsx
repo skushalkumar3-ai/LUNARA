@@ -64,9 +64,13 @@ function SpaceWeatherPanel({
   const hasEvents = data
     ? Object.values(data.events).some((events) => events.length > 0)
     : false;
+  const isConnected = Boolean(
+    data && data.api_status !== "unavailable" && !error
+  );
+  const demoMode = !loading && !isConnected;
   const connectionStatus =
-    error || data?.api_status === "unavailable"
-      ? "NASA API OFFLINE"
+    demoMode
+      ? "DEMO MODE · NO LIVE FEED"
       : loading || !data || data.api_status === "partial"
         ? "DATA UNAVAILABLE"
         : hasEvents
@@ -79,10 +83,6 @@ function SpaceWeatherPanel({
         ? "text-cyan-200"
         : "text-amber-300";
   const activity = data ? deriveSpaceWeatherActivity(data) : null;
-  const isConnected = Boolean(
-    data && data.api_status !== "unavailable" && !error
-  );
-
   return (
     <section
       aria-label="NASA space weather observations"
@@ -97,8 +97,13 @@ function SpaceWeatherPanel({
         </div>
       </div>
       <div className="mt-1 text-[8px] tracking-[0.12em] text-cyan-300/80">
-        REAL NASA OBSERVATION | NASA CCMC DONKI |{" "}
-        {isConnected ? "CONNECTION ONLINE" : "CONNECTION UNAVAILABLE"}
+        {demoMode
+          ? "DEMO MODE · NO VERIFIED LIVE NASA DATA"
+          : loading
+            ? "CONNECTING TO NASA CCMC DONKI…"
+            : data?.api_status === "partial"
+              ? "PARTIAL NASA DONKI DATA · SOME CATEGORIES UNAVAILABLE"
+              : "REAL NASA OBSERVATIONS · NASA CCMC DONKI · CONNECTION ONLINE"}
       </div>
       <div className="mt-2 space-y-1.5">
         {SPACE_WEATHER_CATEGORIES.map(({ type, label }) => {
