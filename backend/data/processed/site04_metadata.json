@@ -1,0 +1,22 @@
+{
+    "site": "Site04 - Shackleton Rim",
+    "source": "NASA LOLA 5mpp LDEM",
+    "width": 1025,
+    "height": 1025,
+    "terrainWidthMeters": 16000.0,
+    "terrainHeightMeters": 16000.0,
+    "boundsMeters": {
+        "left": -9000.0,
+        "right": 7000.0,
+        "top": 1000.0,
+        "bottom": -15000.0
+    },
+    "sourceResolutionMeters": 5,
+    "outputPixelSpacingMeters": 15.625,
+    "elevationUnits": "meters",
+    "dataType": "float32",
+    "byteOrder": "little-endian",
+    "minElevation": -2846.6220703125,
+    "maxElevation": 1803.89013671875,
+    "meanElevation": 245.34378051757812
+}

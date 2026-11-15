@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LUNARA — Junior Astronaut Mission Trainer</title>
+<style>
+:root{color-scheme:dark;--bg:#04060f;--fg:#f4f6ff;--gold:#ffc83d;--accent:#ff5a36;box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font-family:"Trebuchet MS",system-ui,sans-serif;overflow:hidden}
+canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
+#ui{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 16px calc(9vh + env(safe-area-inset-bottom,0px));text-align:center}
+#top{position:fixed;top:calc(10vh + env(safe-area-inset-top,0px));left:0;right:0;text-align:center;pointer-events:none}
+#cap{font-size:clamp(16px,2.6vw,26px);text-shadow:0 2px 8px #000;max-width:900px;min-height:2.4em;margin:0 0 14px}
+#title{font-size:clamp(20px,3.4vw,38px);font-weight:900;color:var(--gold);text-shadow:0 2px 10px #000;letter-spacing:.05em}
+#sub{font-size:clamp(14px,2vw,20px);text-shadow:0 2px 8px #000;margin-top:4px}
+button{pointer-events:auto;font:inherit;font-weight:900;font-size:clamp(18px,3vw,28px);padding:.7em 1.4em;border:0;border-radius:999px;color:#fff;background:linear-gradient(#ff7a4d,var(--accent));box-shadow:0 6px 0 #a02a12,0 0 30px #ff5a3699;cursor:pointer;animation:pulse 1.3s infinite}
+button:active{transform:translateY(4px);box-shadow:0 2px 0 #a02a12}
+button.hide{display:none}
+@keyframes pulse{50%{filter:brightness(1.25);transform:scale(1.04)}}
+#big{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;font-size:clamp(34px,8vw,96px);font-weight:900;color:var(--gold);text-shadow:0 4px 20px #000;text-align:center;padding:0 20px;flex-direction:column}
+#big small{font-size:.28em;color:var(--fg);font-weight:400;margin-top:10px}
+#mute{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:12px;z-index:20;width:44px;height:44px;padding:0;font-size:20px;line-height:1;border-radius:50%;animation:none;background:#000a;box-shadow:0 0 0 2px #ffffff55}
+#mute:active{transform:none;box-shadow:0 0 0 2px #ffffff99}
+
+/* ---------- LUNARA cinematic presentation layer ---------- */
+:root{
+  --gold:#f3cf83;
+  --accent:#d99b55;
+  --ice:#b9d9f5;
+  --panel:rgba(5,12,27,.58);
+}
+body{isolation:isolate}
+canvas{filter:saturate(1.08) contrast(1.04)}
+body::before{
+  content:"";position:fixed;inset:0;z-index:2;pointer-events:none;
+  background:
+    radial-gradient(ellipse at 50% 42%,transparent 28%,rgba(0,0,0,.18) 72%,rgba(0,0,0,.55) 100%),
+    linear-gradient(180deg,rgba(2,7,18,.22),transparent 24%,transparent 72%,rgba(2,7,18,.36));
+}
+body::after{
+  content:"";position:fixed;inset:0;z-index:3;pointer-events:none;opacity:.12;
+  background:repeating-linear-gradient(180deg,rgba(255,255,255,.10) 0,rgba(255,255,255,.10) 1px,transparent 1px,transparent 4px);
+  mix-blend-mode:soft-light;
+}
+#top{z-index:5;top:clamp(34px,9vh,92px);padding:0 20px}
+#title{
+  color:#f4d89a;letter-spacing:.22em;font-size:clamp(25px,4.2vw,54px);
+  text-shadow:0 0 18px rgba(243,207,131,.25),0 3px 18px #000;
+}
+#sub{
+  color:#d9e7f7;letter-spacing:.20em;font-size:clamp(10px,1.35vw,15px);
+  text-transform:uppercase;margin-top:12px;text-shadow:0 2px 12px #000;
+}
+#ui{z-index:6;padding-bottom:calc(7vh + env(safe-area-inset-bottom,0px))}
+#cap{
+  display:inline-block;box-sizing:border-box;max-width:min(780px,92vw);
+  padding:12px 22px;border:1px solid rgba(190,216,245,.22);
+  border-radius:999px;background:linear-gradient(135deg,rgba(8,18,36,.72),rgba(8,18,36,.34));
+  color:#edf4ff;font-size:clamp(12px,1.5vw,17px);letter-spacing:.035em;
+  line-height:1.5;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  box-shadow:0 12px 40px rgba(0,0,0,.22);
+}
+button{
+  border:1px solid rgba(255,230,180,.65);
+  border-radius:999px;color:#111827;
+  background:linear-gradient(180deg,#ffe6ad 0%,#e9b96c 55%,#bd8040 100%);
+  box-shadow:0 3px 0 #76502c,0 0 34px rgba(233,185,108,.28);
+  letter-spacing:.09em;text-transform:uppercase;
+  font-size:clamp(12px,1.45vw,17px);padding:1em 2em;
+  animation:missionPulse 2.2s ease-in-out infinite;
+  transition:filter .2s ease,box-shadow .2s ease;
+}
+button:hover{filter:brightness(1.1);box-shadow:0 3px 0 #76502c,0 0 42px rgba(233,185,108,.48)}
+button:disabled{opacity:.7;cursor:wait;animation:none}
+button:active{transform:translateY(2px);box-shadow:0 1px 0 #76502c}
+button.hide{display:none}
+@keyframes missionPulse{
+  0%,100%{filter:brightness(1);box-shadow:0 3px 0 #76502c,0 0 22px rgba(233,185,108,.18)}
+  50%{filter:brightness(1.08);box-shadow:0 3px 0 #76502c,0 0 38px rgba(233,185,108,.38)}
+}
+#big{z-index:5;text-shadow:0 0 24px rgba(243,207,131,.24),0 4px 24px #000}
+#big small{color:#e5edf8;letter-spacing:.05em;line-height:1.5;text-shadow:0 2px 12px #000}
+#mute{
+  z-index:20;border:1px solid rgba(190,216,245,.35);color:#edf4ff;
+  background:rgba(5,12,27,.72);backdrop-filter:blur(12px);
+  box-shadow:0 4px 20px rgba(0,0,0,.25);font-size:18px;
+}
+#transition{
+  position:fixed;inset:0;z-index:100;pointer-events:none;opacity:0;
+  background:#02040a;transition:opacity .85s ease;
+}
+#transition.active{opacity:1;pointer-events:auto}
+.mission-corner{
+  position:fixed;z-index:5;top:18px;left:20px;pointer-events:none;
+  color:rgba(220,235,255,.72);font:600 10px/1.4 ui-monospace,monospace;
+  letter-spacing:.22em;text-transform:uppercase;
+}
+.mission-corner::before{
+  content:"";display:inline-block;width:7px;height:7px;margin-right:9px;
+  border-radius:50%;background:#d9b875;box-shadow:0 0 12px #d9b875;
+}
+@media(max-width:600px){
+  .mission-corner{top:14px;left:14px;font-size:8px;letter-spacing:.14em}
+  #top{top:14vh}
+  #cap{border-radius:18px;padding:10px 14px}
+  #ui{padding-left:12px;padding-right:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  button{animation:none}
+  #transition{transition:none}
+}
+
+</style></head><body>
+<canvas id="c" aria-label="Animated LUNARA mission launch sequence"></canvas>
+<div class="mission-corner">LUNARA // MISSION 01</div>
+<div id="transition" aria-hidden="true"></div>
+<div id="top"><div id="title"></div><div id="sub"></div></div>
+<div id="big"></div>
+<div id="ui"><p id="cap"></p><button id="b1">🚀 Begin Mission</button></div>
+<script>
+const C=document.getElementById('c'),x=C.getContext('2d'),b=document.getElementById('b1'),cap=document.getElementById('cap'),big=document.getElementById('big'),ti=document.getElementById('title'),su=document.getElementById('sub');
+let W,H,dpr;function rs(){dpr=Math.min(window.devicePixelRatio||1,2);W=innerWidth;H=innerHeight;C.width=W*dpr;C.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0)}rs();addEventListener('resize',rs,{passive:true});
+const rnd=(a,b)=>a+Math.random()*(b-a),lerp=(a,b,t)=>a+(b-a)*t,cl=(v,a=0,b=1)=>Math.min(b,Math.max(a,v)),ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+const stars=Array.from({length:460},()=>({x:rnd(-1,1),y:rnd(-1,1),z:rnd(.05,1),s:rnd(.5,2)}));
+const craters=Array.from({length:40},()=>({a:rnd(0,6.28),d:Math.sqrt(Math.random()),r:rnd(.04,.14)}));
+let scene='title',t0=performance.now(),T=0;
+function go(s){scene=s;t0=performance.now();b.className='hide';cap.textContent='';big.innerHTML='';ti.textContent='';su.textContent=''}
+function staticStars(a=1){x.fillStyle='#fff';for(const s of stars){x.globalAlpha=a*(.4+.6*Math.abs(Math.sin(T*s.z*3+s.x*9)));x.fillRect((s.x*.5+.5)*W,(s.y*.5+.5)*H*.8,s.s,s.s)}x.globalAlpha=1}
+
+/* ---------- characters ---------- */
+function astro(px,py,s,col,ph,leader){
+  x.save();x.translate(px,py);x.scale(s,s);
+  if(leader){ // cape
+    x.fillStyle='#d6212b';x.beginPath();x.moveTo(-8,-62);
+    for(let i=0;i<=6;i++)x.lineTo(-12-i*9,-62+i*8+Math.sin(T*4+i)*5);
+    x.lineTo(-62,-8+Math.sin(T*4)*6);x.lineTo(-12,-24);x.closePath();x.fill();
+  }
+  const leg=(a,c)=>{x.save();x.translate(0,-30);x.rotate(a);x.fillStyle=c;x.beginPath();x.roundRect(-5,0,10,30,4);x.fill();x.fillStyle='#333';x.fillRect(-6,26,13,5);x.restore()};
+  const arm=(a)=>{x.save();x.translate(0,-58);x.rotate(a);x.fillStyle=col;x.beginPath();x.roundRect(-4,0,8,24,4);x.fill();x.fillStyle='#ddd';x.beginPath();x.arc(0,26,5,0,7);x.fill();x.restore()};
+  const sw=Math.sin(ph)*.55;
+  leg(sw,'#c9ccd6');arm(-sw);
+  x.fillStyle='#e8eaf2';x.beginPath();x.roundRect(-20,-60,10,34,4);x.fill(); // pack
+  x.fillStyle=col;x.beginPath();x.roundRect(-13,-64,26,38,8);x.fill();
+  x.fillStyle='#fff8';x.fillRect(-7,-52,14,8);
+  leg(-sw,'#e5e7ee');arm(sw);
+  x.fillStyle='#f2f4fa';x.beginPath();x.arc(2,-74,15,0,7);x.fill();
+  const g=x.createLinearGradient(0,-86,0,-62);g.addColorStop(0,'#5ad0ff');g.addColorStop(1,'#1a2a6a');
+  x.fillStyle=g;x.beginPath();x.ellipse(7,-74,9,10,0,0,7);x.fill();
+  x.fillStyle='#fff9';x.beginPath();x.ellipse(10,-78,3,4,.5,0,7);x.fill();
+  if(leader){x.fillStyle='var(--gold)';x.fillStyle='#ffc83d';x.fillRect(-12,-50,6,6)}
+  x.restore();
+}
+/* ---------- NASA-style insignia (simplified drawing) ---------- */
+function missionPatch(cx,cy,r){
+  x.save();x.translate(cx,cy);
+  x.fillStyle='#0b3d91';x.beginPath();x.arc(0,0,r,0,7);x.fill();
+  x.fillStyle='#fff';[[-.6,-.5],[-.2,-.7],[.45,-.55],[.7,.1],[-.7,.15],[.2,.7],[-.4,.6],[.55,.5]].forEach(([a,b])=>{x.beginPath();x.arc(a*r,b*r,Math.max(.4,r*.05),0,7);x.fill()});
+  x.strokeStyle='#fff';x.lineWidth=Math.max(.7,r*.07);x.beginPath();x.ellipse(0,0,r*1.0,r*.34,-.5,0,7);x.stroke();
+  x.fillStyle='#fc3d21';x.beginPath();x.moveTo(-.72*r,.5*r);x.lineTo(-.12*r,-.45*r);x.lineTo(.1*r,-.05*r);x.lineTo(.5*r,-.38*r);x.lineTo(.2*r,.2*r);x.lineTo(-.05*r,.12*r);x.lineTo(-.4*r,.62*r);x.closePath();x.fill();
+  x.strokeStyle='#fff';x.lineWidth=Math.max(.7,r*.07);x.beginPath();x.arc(0,0,r,0,7);x.stroke();
+  x.restore();
+}
+/* ---------- rocket (heavy-lift style: orange core, twin white boosters, capsule on top) ---------- */
+function rocket(px,by,h,flame,shake){
+  const u=h*.1,cw=u*.95,bw=u*.55,bx=cw/2+bw/2;
+  x.save();x.translate(px+(shake?rnd(-shake,shake):0),by);
+  if(flame>0){[[-bx,bw*.85,1.1],[0,cw*.85,.9],[bx,bw*.85,1.1]].forEach(([fx,fw,m])=>{const f=h*.33*flame*m;const g=x.createLinearGradient(0,0,0,f);g.addColorStop(0,'#fff');g.addColorStop(.3,'#ffd23d');g.addColorStop(1,'#ff4a1a00');
+    x.fillStyle=g;x.beginPath();x.moveTo(fx-fw/2,0);x.quadraticCurveTo(fx,f*(1+Math.random()*.2),fx+fw/2,0);x.fill()})}
+  const hg=(w,c0,c1,c2)=>{const g=x.createLinearGradient(-w/2,0,w/2,0);g.addColorStop(0,c0);g.addColorStop(.45,c1);g.addColorStop(1,c2);return g};
+  // engine nozzles
+  x.fillStyle='#2b2f3a';[0].forEach(()=>{x.beginPath();x.moveTo(-cw*.3,-u*.3);x.lineTo(cw*.3,-u*.3);x.lineTo(cw*.42,0);x.lineTo(-cw*.42,0);x.fill()});
+  // core stage
+  x.fillStyle=hg(cw,'#a8431a','#ff8d40','#8f3513');x.fillRect(-cw/2,-h*.76,cw,h*.76-u*.3);
+  // upper stage + capsule + escape tower
+  x.fillStyle=hg(cw,'#b9bfcf','#fff','#9aa1b3');x.fillRect(-cw*.42,-h*.84,cw*.84,h*.09);
+  x.beginPath();x.moveTo(-cw*.42,-h*.84);x.lineTo(-cw*.24,-h*.92);x.lineTo(cw*.24,-h*.92);x.lineTo(cw*.42,-h*.84);x.fill();
+  x.fillStyle='#7d8498';x.fillRect(-u*.04,-h*1.04,u*.08,h*.12);
+  x.fillStyle='#e9ebf2';x.beginPath();x.moveTo(-u*.16,-h*.97);x.lineTo(0,-h*1.09);x.lineTo(u*.16,-h*.97);x.fill();
+  // side boosters
+  [-1,1].forEach(sg=>{const c=sg*bx;x.save();x.translate(c,0);
+    x.fillStyle=hg(bw,'#aeb4c4','#fff','#9097a8');x.fillRect(-bw/2,-h*.66,bw,h*.66-u*.15);
+    x.beginPath();x.moveTo(-bw/2,-h*.66);x.quadraticCurveTo(-bw*.4,-h*.8,0,-h*.86);x.quadraticCurveTo(bw*.4,-h*.8,bw/2,-h*.66);x.fill();
+    x.fillStyle='#1b1e27';x.fillRect(-bw/2,-h*.5,bw,h*.03);x.fillRect(-bw/2,-h*.14,bw,h*.03);
+    x.fillStyle='#d6212b';x.fillRect(-bw/2,-h*.46,bw,h*.012);
+    x.fillStyle='#2b2f3a';x.beginPath();x.moveTo(-bw*.28,-u*.15);x.lineTo(bw*.28,-u*.15);x.lineTo(bw*.38,0);x.lineTo(-bw*.38,0);x.fill();
+    x.restore()});
+  // NASA insignia + lettering on the core
+  missionPatch(0,-h*.58,cw*.34);
+  x.fillStyle='#fff';x.font='bold '+Math.max(6,cw*.26)+'px Arial,sans-serif';x.textAlign='center';x.fillText('LUNARA',0,-h*.58+cw*.62);
+  x.restore();
+}
+/* ---------- planets ---------- */
+const P=[
+ ['Mercury','#b8b0a6','#4d4741',.5,'Mercury zooms around the Sun in only 88 days!'],
+ ['Venus','#f2d08a','#9a5d1e',.8,'Venus is the hottest planet, even hotter than Mercury.'],
+ ['Earth','#3b8cff','#0b2a6e',.85,'Earth, our home, is the only planet known to have life.'],
+ ['Mars','#e2663a','#6b210e',.65,'Mars is red because of rusty iron dust.'],
+ ['Jupiter','#e8c9a0','#8a5a35',1.5,'Jupiter is so big that 1,300 Earths could fit inside.'],
+ ['Saturn','#efdca3','#8e7440',1.3,'Saturn’s rings are made of ice and rock chunks.'],
+ ['Uranus','#a8ecf0','#2b8a99',1,'Uranus spins on its side like a rolling ball.'],
+ ['Neptune','#4a6bff','#10206e',1,'Neptune has the fastest winds in the Solar System.']];
+function sphere(px,py,r,c1,c2,name){
+  const g=x.createRadialGradient(px-r*.4,py-r*.4,r*.1,px,py,r);g.addColorStop(0,c1);g.addColorStop(1,c2);
+  if(name==='Saturn'){x.save();x.translate(px,py);x.rotate(-.35);x.strokeStyle='#d8c490aa';for(let i=0;i<4;i++){x.lineWidth=r*(.12-i*.02);x.beginPath();x.ellipse(0,0,r*(1.5+i*.18),r*(.4+i*.05),0,Math.PI,2*Math.PI);x.stroke()}x.restore()}
+  x.fillStyle=g;x.beginPath();x.arc(px,py,r,0,7);x.fill();
+  x.save();x.beginPath();x.arc(px,py,r,0,7);x.clip();
+  if(name==='Jupiter'||name==='Saturn'||name==='Neptune'){x.fillStyle='#0003';for(let i=-3;i<4;i++)x.fillRect(px-r,py+i*r*.27,2*r,r*.1)}
+  if(name==='Earth'){x.fillStyle='#3cb55a';[[-.3,-.2,.35],[.3,.25,.3],[.05,.55,.18]].forEach(([a,b,s])=>{x.beginPath();x.arc(px+a*r,py+b*r,s*r,0,7);x.fill()});x.fillStyle='#fff8';x.beginPath();x.ellipse(px-r*.3,py+r*.1,r*.4,r*.1,.4,0,7);x.fill()}
+  if(name==='Mars'){x.fillStyle='#fff9';x.beginPath();x.arc(px,py-r*.95,r*.3,0,7);x.fill()}
+  if(name==='Jupiter'){x.fillStyle='#c0482a';x.beginPath();x.ellipse(px+r*.3,py+r*.25,r*.2,r*.12,0,0,7);x.fill()}
+  if(name==='Moon'||name==='Mercury'||name==='Pluto'){x.fillStyle='#0003';craters.forEach(k=>{x.beginPath();x.arc(px+Math.cos(k.a)*k.d*r*.85,py+Math.sin(k.a)*k.d*r*.85,k.r*r,0,7);x.fill()})}
+  const sh=x.createRadialGradient(px-r*.5,py-r*.4,r*.4,px,py,r*1.1);sh.addColorStop(0,'#0000');sh.addColorStop(1,'#000b');x.fillStyle=sh;x.fillRect(px-r,py-r,2*r,2*r);
+  x.restore();
+}
+/* ---------- NASA Planetary Fact Sheet snapshot + procedural realistic textures ---------- */
+const NASA={Mercury:['4,879 km','57.9 million km','88 Earth days','3.7 m/s²','167 °C'],Venus:['12,104 km','108.2 million km','224.7 Earth days','8.9 m/s²','464 °C'],Earth:['12,756 km','149.6 million km','365.2 days','9.8 m/s²','15 °C'],Mars:['6,792 km','227.9 million km','687 Earth days','3.7 m/s²','-65 °C'],Jupiter:['142,984 km','778.5 million km','11.9 Earth years','23.1 m/s²','-110 °C'],Saturn:['120,536 km','1,432 million km','29.4 Earth years','9.0 m/s²','-140 °C'],Uranus:['51,118 km','2,867 million km','84 Earth years','8.7 m/s²','-195 °C'],Neptune:['49,528 km','4,515 million km','164.8 Earth years','11.0 m/s²','-200 °C'],Moon:['3,475 km','384,400 km from Earth','27.3 Earth days','1.62 m/s²','-20 °C avg']};
+const NL=['Diameter','Distance from Sun','Year length','Surface gravity','Avg. temperature'];
+const DK={Mercury:4879,Venus:12104,Earth:12756,Mars:6792,Jupiter:142984,Saturn:120536,Uranus:51118,Neptune:49528};
+const psize=n=>Math.pow(DK[n]/142984,.4)*1.6;let curPanel='';
+function h3(i,j,k){const n=Math.sin(i*127.1+j*311.7+k*74.7)*43758.5453;return n-Math.floor(n)}
+function vn(X,Y,Z){const i=Math.floor(X),j=Math.floor(Y),k=Math.floor(Z),s=t=>t*t*(3-2*t),a=s(X-i),b=s(Y-j),c=s(Z-k);let r=0;for(let p=0;p<2;p++)for(let q=0;q<2;q++)for(let w=0;w<2;w++)r+=h3(i+p,j+q,k+w)*(p?a:1-a)*(q?b:1-b)*(w?c:1-c);return r}
+function fbm(X,Y,Z,o=5){let r=0,a=.5,f=1;for(let l=0;l<o;l++){r+=a*vn(X*f,Y*f,Z*f);f*=2;a*=.5}return r}
+const mix=(a,b,t)=>{t=cl(t);return[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t]};
+function col(n,X,Y,Z){const F=(s,o,k=0)=>fbm(X*s+k,Y*s+k,Z*s+k,o);
+ if(n==='Moon'||n==='Mercury'){const e=F(5,6),m=n==='Moon'?F(1.6,3,7):0;let v=70+e*130+(F(18,2)-.5)*50;if(m>.52)v*=.6;return[v,v*.98,v*.95]}
+ if(n==='Earth'){const e=F(2.4,6),c=F(3,5,20);let k;if(e<.5)k=mix([5,25,70],[22,85,155],(e-.3)*5);else{k=mix([60,115,50],[135,110,70],(e-.5)*4+Math.abs(Y)*.3-.2);if(e>.66)k=mix(k,[235,235,240],(e-.66)*8)}if(Math.abs(Y)>.86)k=[240,245,250];return mix(k,[255,255,255],cl((c-.5)*3.5)*.9)}
+ if(n==='Venus'){const s=F(2,5);return mix([200,150,80],[245,215,150],(Math.sin(Y*6+s*5)*.5+.5)*.7+s*.3)}
+ if(n==='Mars'){const e=F(3,6);let k=mix([185,100,55],[120,60,40],(.5-e)*3+.3);if(Math.abs(Y)>.9)k=[240,240,245];return mix(k,[215,140,90],F(12,2)*.4)}
+ if(n==='Jupiter'||n==='Saturn'){const t=F(3,4,5)*.6,J=n==='Jupiter',b=Math.sin(Y*(J?16:11)+t*4)*.5+.5;let k=J?mix([150,100,65],[238,215,185],b):mix([180,150,100],[235,215,160],b);if(J){const dd=Math.pow((Math.atan2(Z,X)-1)*1.3,2)+Math.pow((Y+.3)*3,2);if(dd<.1)k=mix(k,[190,80,50],1-dd*10)}return k}
+ if(n==='Uranus')return mix([130,205,215],[175,228,232],Math.sin(Y*8)*.5+.5+F(3,3)*.2);
+ return mix([30,60,180],[75,115,232],F(3,4)+Math.sin(Y*7)*.15)}
+const TX={};
+function genTex(n){const w=384,h=192,im=new ImageData(w,h),d=im.data;for(let py=0;py<h;py++){const lat=(py/h-.5)*Math.PI,r=Math.cos(lat),Y=Math.sin(lat);for(let px=0;px<w;px++){const a=px/w*6.2832,c=col(n,Math.cos(a)*r,Y,Math.sin(a)*r),o=(py*w+px)*4;d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255}}TX[n]=im}
+{const q=['Earth','Moon','Mercury','Venus','Mars','Jupiter','Saturn','Uranus','Neptune'];let qi=0;const nx=()=>{if(qi<q.length){genTex(q[qi++]);setTimeout(nx,60)}};setTimeout(nx,300)}
+const sc=document.createElement('canvas');sc.width=sc.height=320;const sx=sc.getContext('2d'),sim=sx.createImageData(320,320);
+const GL={Earth:'90,160,255',Venus:'255,210,140',Mars:'230,150,110',Neptune:'80,120,255',Uranus:'140,220,230'};
+function rings(px,py,r,front){x.save();x.translate(px,py);x.rotate(-.3);x.scale(1,.3);[[1.25,1.45,.25],[1.5,1.8,.6],[1.85,2.1,.5],[2.15,2.3,.2]].forEach(([a,b,al])=>{x.strokeStyle=`rgba(225,205,160,${al})`;x.lineWidth=(b-a)*r;x.beginPath();x.arc(0,0,(a+b)/2*r,front?0:Math.PI,front?Math.PI:2*Math.PI);x.stroke()});x.restore()}
+function tsphere(px,py,r,n,rot){const tx=TX[n];if(!tx){sphere(px,py,r,'#999','#222',n);return}
+ const S=320,d=sim.data,td=tx.data,tw=tx.width,th=tx.height;
+ for(let j=0;j<S;j++){const y=(j+.5)/S*2-1;for(let i=0;i<S;i++){const xx=(i+.5)/S*2-1,r2=xx*xx+y*y,o=(j*S+i)*4;if(r2>=1){d[o+3]=0;continue}const z=Math.sqrt(1-r2),u=(((Math.atan2(xx,z)+rot)/6.2832)%1+1)%1,v=Math.asin(y)/Math.PI+.5,q=(((v*th)|0)*tw+((u*tw)|0))*4;const l=.03+Math.pow(Math.max(0,-xx*.62-y*.25+z*.74),.85);d[o]=Math.min(255,td[q]*l);d[o+1]=Math.min(255,td[q+1]*l);d[o+2]=Math.min(255,td[q+2]*l);d[o+3]=r2>.985?(1-r2)/.015*255:255}}
+ sx.putImageData(sim,0,0);
+ if(GL[n]){const g=x.createRadialGradient(px,py,r*.97,px,py,r*1.14);g.addColorStop(0,`rgba(${GL[n]},.45)`);g.addColorStop(1,`rgba(${GL[n]},0)`);x.fillStyle=g;x.beginPath();x.arc(px,py,r*1.15,0,7);x.fill()}
+ if(n==='Saturn')rings(px,py,r,false);
+ x.imageSmoothingQuality='high';x.drawImage(sc,px-r,py-r,2*r,2*r);
+ if(n==='Saturn')rings(px,py,r,true)}
+function drawPanel(){if(!curPanel)return;const a=NASA[curPanel],f=Math.max(11,Math.min(20,W/55));x.textAlign='center';for(let k=0;k<5;k++){const cx=W*(.2+.15*k);x.fillStyle='#7fe0c0';x.font=(f*.65)+'px monospace';x.fillText(NL[k].toUpperCase(),cx,H*.875);x.fillStyle='#fff';x.font='bold '+f+'px monospace';x.fillText(a[k],cx,H*.925)}x.fillStyle='#8899aa';x.font=(f*.55)+'px monospace';x.fillText('MISSION DATA • PLANETARY REFERENCE',W/2,H*.975)}
+let reg;function drawRegolith(gy){if(!reg){reg=document.createElement('canvas');reg.width=512;reg.height=128;const g=reg.getContext('2d'),im=g.createImageData(512,128),d=im.data;for(let py=0;py<128;py++)for(let px=0;px<512;px++){const n=fbm(px/45,py/14,3,5),v=Math.min(255,(60+n*130)*(.8+.2*py/128)+(Math.random()-.5)*28),o=(py*512+px)*4;d[o]=v;d[o+1]=v*.97;d[o+2]=v*.93;d[o+3]=255}g.putImageData(im,0,0)}x.imageSmoothingQuality='high';x.drawImage(reg,0,gy,W,H-gy)}
+function moonData(){const f=Math.max(12,Math.min(18,W/60));x.fillStyle='#bfe9ff';x.font=f+'px monospace';x.textAlign='left';['MOON · NASA DATA','Gravity: 1.62 m/s² (1/6 of Earth)','Distance from Earth: 384,400 km','Temperature: -173 °C night, 127 °C day','Air: almost none (vacuum)'].forEach((s,i)=>x.fillText(s,W*.04,H*.34+i*f*1.5))}
+const gc=document.createElement('canvas');gc.width=gc.height=160;{const g=gc.getContext('2d'),im=g.createImageData(160,160);for(let i=0;i<im.data.length;i+=4){im.data[i]=im.data[i+1]=im.data[i+2]=Math.random()*255;im.data[i+3]=255}g.putImageData(im,0,0)}
+const gpat=x.createPattern(gc,'repeat');
+function film(){x.save();x.globalAlpha=.09;x.globalCompositeOperation='overlay';x.translate(-Math.random()*160,-Math.random()*160);x.fillStyle=gpat;x.fillRect(0,0,W+160,H+160);x.restore();const v=x.createRadialGradient(W/2,H/2,Math.min(W,H)*.35,W/2,H/2,Math.max(W,H)*.75);v.addColorStop(0,'#0000');v.addColorStop(1,'#000a');x.fillStyle=v;x.fillRect(0,0,W,H)}
+/* ---------- realistic space-suited astronaut (overrides the earlier cartoon one) ---------- */
+function astro(px,py,s,col,ph,leader){
+ x.save();x.translate(px,py);x.scale(s,s);
+ const sw=Math.sin(ph)*.5,G=(a,b,c)=>{const g=x.createLinearGradient(a,0,b,0);g.addColorStop(0,'#fafbff');g.addColorStop(1,c||'#aeb4c4');return g};
+ const rr=(a,b,w,h,r,f)=>{x.fillStyle=f;x.beginPath();x.roundRect(a,b,w,h,r);x.fill()};
+ const limb=(sx,sy,ang,len,wd,boot)=>{x.save();x.translate(sx,sy);x.rotate(ang);rr(-wd/2,0,wd,len,wd/2.5,G(-wd/2,wd/2));rr(-wd/2-1,len*.45,wd+2,5,2,'#6b7184');if(leader)rr(-wd/2,len*.2,wd,3,0,'#d6212b');rr(-wd/2-1,len-3,wd+2,boot?9:8,boot?3:4,boot?'#3a3d48':'#8a90a3');x.restore()};
+ limb(0,-62,sw,27,9,0);limb(0,-32,-sw,35,13,1);
+ rr(-27,-67,15,44,5,G(-27,-12,'#98a0b4'));rr(-25,-61,11,6,2,'#555b6b');rr(-25,-50,11,3,1,'#555b6b');
+ rr(-14,-69,28,40,9,G(-14,14));rr(-14,-33,28,5,2,'#6b7184');rr(-14,-39,28,3,0,leader?'#d6212b':col);
+ rr(-6,-58,14,12,2,'#9aa1b3');['#ff4a3a','#3cff8a','#4ab0ff'].forEach((c,i)=>{x.fillStyle=c;x.beginPath();x.arc(-2+i*5,-52,1.6,0,7);x.fill()});
+ x.strokeStyle='#e8892a';x.lineWidth=2;x.beginPath();x.moveTo(-6,-54);x.quadraticCurveTo(-19,-44,-25,-55);x.stroke();x.strokeStyle='#4a90e2';x.beginPath();x.moveTo(-6,-50);x.quadraticCurveTo(-19,-38,-25,-47);x.stroke();
+ missionPatch(9.5,-62.8,4.6);
+ limb(0,-32,sw,35,13,1);limb(0,-62,-sw,27,9,0);
+ rr(-8,-73,16,6,2,'#6b7184');
+ const hg=x.createRadialGradient(-2,-90,2,2,-86,19);hg.addColorStop(0,'#fff');hg.addColorStop(1,'#b4bacb');x.fillStyle=hg;x.beginPath();x.arc(2,-86,17,0,7);x.fill();
+ const vg=x.createLinearGradient(0,-98,0,-74);vg.addColorStop(0,'#ffe3a0');vg.addColorStop(.5,'#c98f2a');vg.addColorStop(1,'#6b4510');x.fillStyle=vg;x.beginPath();x.ellipse(8,-86,11,12.5,0,0,7);x.fill();
+ x.fillStyle='#8fc8ff66';x.beginPath();x.ellipse(5,-91,6,4,-.3,0,7);x.fill();x.fillStyle='#fffc';x.beginPath();x.ellipse(12,-92,2,3.5,.5,0,7);x.fill();
+ rr(-6,-103,10,4,2,'#d8dbe6');x.fillStyle='#ffe9a0';x.fillRect(4,-102,3,2);
+ x.restore()}
+/* ---------- scenes ---------- */
+const DRAW={};
+DRAW.title=()=>{x.fillStyle='#04060f';x.fillRect(0,0,W,H);staticStars();
+  sphere(W*.5,H*1.55,H*1.0,'#c9ccd6','#3a3d4a','Moon');rocket(W*.5,H*.62+Math.sin(T*2)*4,H*.34,.3,0);
+  ti.textContent='LUNARA';su.textContent='JUNIOR ASTRONAUT MISSION TRAINER  •  SHACKLETON RIM'};
+let walkMsgs=[[0.5,'MISSION CONTROL // Launch window confirmed.'],[2.5,'Commander Alexa leads the crew to the launch vehicle.'],[4.5,'Five explorers. One destination. A new lunar frontier.'],[7,'LUNARA-01 // All crew members are ready for liftoff.']];
+DRAW.walk=()=>{
+  const gy=H*.72,u=H/260,p=cl(T/10);
+  const sk=x.createLinearGradient(0,0,0,gy);sk.addColorStop(0,'#0a0e2e');sk.addColorStop(.6,'#5a3a78');sk.addColorStop(1,'#ff9a52');x.fillStyle=sk;x.fillRect(0,0,W,gy);
+  staticStars(.6);
+  x.fillStyle='#ffd27a';x.beginPath();x.arc(W*.3,gy-H*.04,H*.07,0,7);x.fill();
+  x.fillStyle='#2a2438';x.fillRect(0,gy,W,H-gy);x.fillStyle='#3a3350';x.fillRect(0,gy,W,6);
+  // pad & gantry
+  const rx=W*.82;x.fillStyle='#555';x.fillRect(rx-H*.14,gy-8,H*.28,14);
+  x.strokeStyle='#8a8fa5';x.lineWidth=3;const gx=rx+H*.12;x.strokeRect(gx,gy-H*.5,H*.04,H*.5);for(let i=0;i<8;i++){x.beginPath();x.moveTo(gx,gy-i*H*.0625);x.lineTo(gx+H*.04,gy-(i+1)*H*.0625);x.stroke()}
+  rocket(rx,gy-6,H*.5,0,0);
+  for(let i=0;i<5;i++){x.fillStyle=`rgba(255,255,255,${.25-i*.04})`;x.beginPath();x.arc(rx-30+i*20,gy-4-Math.sin(T+i)*8,10+i*5+Math.sin(T*2+i)*3,0,7);x.fill()}
+  // walk
+  const lx=lerp(-W*.12,W*.62,ease(p)),ph=T*4.8;
+  // spotlight
+  const sp=x.createLinearGradient(lx,0,lx,gy);sp.addColorStop(0,'#fff0');sp.addColorStop(1,'#ffe9a066');x.fillStyle=sp;x.beginPath();x.moveTo(lx-10,0);x.lineTo(lx+10,0);x.lineTo(lx+H*.2,gy+H*.1);x.lineTo(lx-H*.2,gy+H*.1);x.fill();
+  const fol=[[-70,-22,'#3b82f6'],[-120,18,'#22c55e'],[-170,-30,'#a855f7'],[-220,22,'#f59e0b']];
+  fol.sort((a,b)=>a[1]-b[1]).forEach(([dx,dy,c],i)=>astro(lx+dx*u*.68,gy+H*.1+dy*u*.25,u*.62,c,ph+i,false));
+  // leader aura
+  const ay=gy+H*.1+10*u*.3,ag=x.createRadialGradient(lx,ay-48*u,8,lx,ay-48*u,85*u);ag.addColorStop(0,'#ffd24a99');ag.addColorStop(1,'#ffd24a00');x.fillStyle=ag;x.fillRect(lx-90*u,ay-140*u,180*u,170*u);
+  astro(lx,ay,u*.9,'#ffc83d',ph,true);
+  x.fillStyle='#ffe27a';for(let i=0;i<14;i++){const a=(T*.7+i/14)%1;x.globalAlpha=1-a;x.beginPath();x.arc(lx+Math.sin(i*5)*38*u,ay-32*u-a*85*u,2.2,0,7);x.fill()}x.globalAlpha=1;
+  x.fillStyle='#ffe27a';x.font='bold '+(14*u)+'px sans-serif';x.textAlign='center';x.fillText('★ COMMANDER ALEXA ★',lx,ay-98*u);
+  // cinematic bars + vignette
+  x.fillStyle='#000';x.fillRect(0,0,W,H*.07);x.fillRect(0,H*.93,W,H*.07);
+  for(const m of walkMsgs)if(T>=m[0])cap.textContent=m[1];
+  if(T>10&&b.className==='hide'){b.textContent='IGNITE THE LAUNCH SEQUENCE';b.className='';b.disabled=false;b.onclick=()=>go('launch');cap.textContent='Crew secured. Flight systems are go. Awaiting your command.'}
+};
+const smoke=Array.from({length:40},()=>({a:rnd(0,6.28),s:rnd(.6,1.4)}));
+DRAW.launch=()=>{
+  const gy=H*.78,alt=T<4?0:60*Math.pow(T-4,2.1)*H/700,rise=Math.min(alt,H*.35),k=cl(alt/(H*4));
+  const sk=x.createLinearGradient(0,0,0,H);sk.addColorStop(0,`rgb(${lerp(10,2,k)},${lerp(14,3,k)},${lerp(46,10,k)})`);sk.addColorStop(1,`rgb(${lerp(255,2,k)},${lerp(154,3,k)},${lerp(82,10,k)})`);x.fillStyle=sk;x.fillRect(0,0,W,H);
+  staticStars(.4+k*.6);
+  const g=gy+(alt-rise);x.fillStyle='#2a2438';x.fillRect(0,g,W,H);x.fillStyle='#555';x.fillRect(W*.5-H*.14,g-8,H*.28,14);
+  if(T>2.5)for(const s of smoke){const q=cl((T-2.5)*.35*s.s),px=W*.5+Math.cos(s.a)*q*W*.28,py=g-8-Math.abs(Math.sin(s.a))*q*70;x.fillStyle=`rgba(255,255,255,${.5*(1-q)})`;x.beginPath();x.arc(px,py,16+q*60,0,7);x.fill()}
+  const sh=T>2&&T<4?5:T>=4?2:0;rocket(W*.5,gy-6-rise,H*.5,T>2?1:0,sh);
+  const n=T<1?'3':T<2?'2':T<3?'1':T<4?'LIFTOFF!':'';big.textContent=n;
+  cap.textContent=T>4.5?'MAIN ENGINES IGNITED // Ascending to orbit…':'T-MINUS // Launch sequence active';
+  {const kk=cl(alt/(H*2.5)),f=Math.max(12,Math.min(18,W/60));x.fillStyle='#bfe9ff';x.font=f+'px monospace';x.textAlign='left';x.fillText('ALTITUDE '+Math.round(kk*408)+' km (ISS orbits at ~408 km)',W*.04,H*.14);x.fillText('SPEED '+(kk*7.8).toFixed(1)+' km/s (orbit needs 7.8 km/s)',W*.04,H*.14+f*1.5)}
+  x.fillStyle=`rgba(255,255,255,${cl((T-8)*.8)})`;x.fillRect(0,0,W,H);
+  if(T>9.3)go('space');
+};
+let sD=3.4;
+function window_(){const l=W*.05,t=H*.08,r=W*.95,bt=H*.78,rr=Math.min(W,H)*.08;x.beginPath();x.roundRect(l,t,r-l,bt-t,rr);return[l,t,r,bt]}
+DRAW.space=()=>{
+  x.fillStyle='#000';x.fillRect(0,0,W,H);
+  x.save();const[l,t,r,bt]=window_();x.clip();
+  x.fillStyle='#02030a';x.fillRect(l,t,r-l,bt-t);
+  const cx=W/2,cy=(t+bt)/2,mt=P.length*sD,sp=T<mt?1:.5;
+  x.fillStyle='#fff';for(const s of stars){s.z-=.0075*sp*(1+(s.s>1.5));if(s.z<=.02)s.z=1;const px=cx+s.x/s.z*W*.18,py=cy+s.y/s.z*W*.18,pz=s.z+.02*sp,qx=cx+s.x/pz*W*.18,qy=cy+s.y/pz*W*.18;x.globalAlpha=1-s.z;x.strokeStyle='#fff';x.lineWidth=s.s;x.beginPath();x.moveTo(qx,qy);x.lineTo(px,py);x.stroke()}x.globalAlpha=1;
+  // sun
+  if(T<mt){const sg=x.createRadialGradient(cx*.4,cy*.6,2,cx*.4,cy*.6,H*.25*(1-T/mt*.8)+20);sg.addColorStop(0,'#fff');sg.addColorStop(.2,'#ffd27a');sg.addColorStop(1,'#ff9a3000');x.fillStyle=sg;x.fillRect(l,t,r-l,bt-t)}
+  const i=Math.floor(T/sD);
+  if(i<P.length){const q=P[i],p=(T-i*sD)/sD,side=i%2?1:-1,px=cx+side*W*.34*Math.pow(p,1.4),py=cy-H*.05*Math.pow(p,1.4),rad=4+psize(q[0])*H*.5*Math.pow(p,3.2);
+    x.globalAlpha=cl(p*8);tsphere(px,py,rad,q[0],T*.25+i);x.globalAlpha=1;curPanel=q[0];
+    ti.textContent=`Planet ${i+1} of 8: ${q[0]}`;su.textContent=q[4];cap.textContent='';
+  }else{const p=cl((T-mt)/4.5);curPanel='Moon';tsphere(cx,cy+H*.02,6+Math.pow(p,3)*H*1.1,'Moon',.5);ti.textContent='LUNAR APPROACH';su.textContent='Shackleton Rim // Descent and landing sequence initiated';
+    if(T>mt+5)go('land')}
+  x.restore();
+  // cockpit frame
+  x.fillStyle='#10131c';x.beginPath();x.rect(0,0,W,H);const rr=Math.min(W,H)*.08;x.roundRect(W*.05,H*.08,W*.9,H*.7,rr);x.fill('evenodd');
+  x.strokeStyle='#3a4258';x.lineWidth=6;x.beginPath();x.roundRect(W*.05,H*.08,W*.9,H*.7,rr);x.stroke();
+  const dg=x.createLinearGradient(0,H*.78,0,H);dg.addColorStop(0,'#1a1f2e');dg.addColorStop(1,'#080a10');x.fillStyle=dg;x.fillRect(0,H*.78,W,H*.22);
+  for(let k=0;k<14;k++){x.fillStyle=Math.sin(T*3+k*1.7)>0?['#3cff8a','#ffc83d','#ff4a4a'][k%3]:'#222';x.beginPath();x.arc(W*.08+k*W*.065,H*.8,5,0,7);x.fill()}
+  // progress dots
+  for(let k=0;k<8;k++){x.fillStyle=k<=i?'#ffc83d':'#555';x.beginPath();x.arc(W/2+(k-3.5)*26,H*.07-8,7,0,7);x.fill()}
+  x.fillStyle='#8ff';x.font='13px monospace';x.textAlign='left';x.fillText('CREW VIEW • SPEED '+(i<8?'28,000 km/h':'DESCENT'),W*.07,H*.83);drawPanel();
+};
+
+/* ---------- React host handoff ---------- */
+function enterLunara(){
+  const overlay=document.getElementById('transition');
+  if(b.disabled)return;
+  b.disabled=true;
+  b.textContent='ESTABLISHING SURFACE LINK…';
+  overlay.classList.add('active');
+  // Fade fully to black before React swaps the iframe for SurfaceTutorial.
+  setTimeout(()=>{
+    if(window.parent!==window){
+      window.parent.postMessage(
+        {type:'LUNARA_LAUNCH_COMPLETE'},
+        window.location.origin
+      );
+    }else{
+      // When opened directly for preview, restart instead of posting to a host.
+      overlay.classList.remove('active');
+      go('title');
+    }
+  },900);
+}
+
+DRAW.land=()=>{
+  const gy=H*.78;x.fillStyle='#000';x.fillRect(0,0,W,H);staticStars();
+  tsphere(W*.16,H*.2,H*.07,'Earth',T*.05);
+  drawRegolith(gy);
+  x.fillStyle='#0004';craters.forEach((k,i)=>{x.beginPath();x.ellipse((i/40)*W,gy+20+k.d*(H-gy-30),k.r*W*.18,k.r*W*.05,0,0,7);x.fill()});
+  const td=7,p=cl(T/td),ly=lerp(-H*.2,gy-H*.01,1-Math.pow(1-p,2)),lx=W*.5,s=H/300;
+  if(T<td){const fl=(50+Math.random()*35)*s;x.fillStyle='#ff8a2aaa';x.beginPath();x.moveTo(lx-8*s,ly-4*s);x.lineTo(lx,ly+fl);x.lineTo(lx+8*s,ly-4*s);x.fill();x.fillStyle='#fff3b0cc';x.beginPath();x.moveTo(lx-4*s,ly-4*s);x.lineTo(lx,ly+fl*.6);x.lineTo(lx+4*s,ly-4*s);x.fill();
+    x.fillStyle=`rgba(200,200,205,${p*.5})`;for(let i=0;i<12;i++){x.beginPath();x.arc(lx+(i-6)*30*s*p,gy+4,10*s*p,0,7);x.fill()}}
+  x.save();x.translate(lx,ly);x.scale(s,s);
+  // new design: tall reusable-style rocket with 4 landing legs
+  x.strokeStyle='#9aa0b0';x.lineWidth=3;x.beginPath();x.moveTo(-14,-40);x.lineTo(-44,0);x.moveTo(14,-40);x.lineTo(44,0);x.moveTo(-8,-36);x.lineTo(-20,0);x.moveTo(8,-36);x.lineTo(20,0);x.stroke();
+  x.fillStyle='#c9ced9';x.fillRect(-52,-2,16,4);x.fillRect(36,-2,16,4);x.fillRect(-26,-2,12,4);x.fillRect(14,-2,12,4);
+  x.fillStyle='#2b2f3a';x.beginPath();x.moveTo(-7,-14);x.lineTo(7,-14);x.lineTo(11,-3);x.lineTo(-11,-3);x.fill();
+  x.fillStyle='#d8dbe6';x.beginPath();x.moveTo(-16,-34);x.lineTo(-30,-14);x.lineTo(-16,-18);x.fill();x.beginPath();x.moveTo(16,-34);x.lineTo(30,-14);x.lineTo(16,-18);x.fill();
+  const bg=x.createLinearGradient(-16,0,16,0);bg.addColorStop(0,'#aeb4c4');bg.addColorStop(.35,'#ffffff');bg.addColorStop(1,'#9097a8');
+  x.fillStyle=bg;x.fillRect(-16,-104,32,92);
+  x.fillStyle='#1b1e27';x.fillRect(-16,-30,32,8);x.fillRect(-16,-62,32,5);
+  missionPatch(0,-86,8);
+  x.fillStyle='#d6212b';x.fillRect(-16,-76,32,3);
+  x.fillStyle='#1d3a7a';x.beginPath();x.arc(0,-48,5,0,7);x.fill();x.strokeStyle='#cfd6e6';x.lineWidth=1.5;x.stroke();
+  const ng=x.createLinearGradient(-16,0,16,0);ng.addColorStop(0,'#b9bfcf');ng.addColorStop(.35,'#fff');ng.addColorStop(1,'#9097a8');
+  x.fillStyle=ng;x.beginPath();x.moveTo(-16,-104);x.quadraticCurveTo(-14,-124,0,-136);x.quadraticCurveTo(14,-124,16,-104);x.fill();
+  x.fillStyle='#d6212b';x.beginPath();x.moveTo(-6,-124);x.quadraticCurveTo(-3,-132,0,-136);x.quadraticCurveTo(3,-132,6,-124);x.fill();
+  x.restore();
+  if(T>td){const q=T-td;moonData();
+    if(q<2){x.fillStyle=`rgba(210,210,215,${.6-q*.3})`;for(let i=0;i<18;i++){x.beginPath();x.arc(lx+Math.cos(i)*q*W*.2,gy+6-Math.abs(Math.sin(i*2))*q*20,10+q*20,0,7);x.fill()}}
+    const fx=lx+W*.18;x.strokeStyle='#ddd';x.lineWidth=3;x.beginPath();x.moveTo(fx,gy+14);x.lineTo(fx,gy-H*.17);x.stroke();x.fillStyle='#0b3d91';x.fillRect(fx,gy-H*.17,H*.1,H*.06);missionPatch(fx+H*.05,gy-H*.14,H*.022);
+    astro(lx-W*.15,gy+30,H/390,'#ffc83d',Math.sin(T)*0.3,true);
+    big.innerHTML='TOUCHDOWN CONFIRMED<small>LUNARA-01 // Crew safe. Lunar surface operations are ready.</small>';
+    if(b.className){b.textContent='ENTER LUNARA';b.className='';b.disabled=false;b.onclick=enterLunara}
+  }else cap.textContent='Touchdown in progress… engines firing!';
+};
+DRAW.title.init=()=>{b.textContent='🚀 BEGIN MISSION';b.className='';b.disabled=false;b.onclick=()=>go('walk')};
+const _go=go;go=function(s){_go(s);if(s==='title')DRAW.title.init()};
+DRAW.title.init();
+function loop(n){T=(n-t0)/1000;x.clearRect(0,0,W,H);curPanel='';DRAW[scene]();film();requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+/* ---------- original synthesized soundtrack (Web Audio, no files needed) ---------- */
+(function(){
+const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+let ctx,master,rev,noiseBuf,enabled=true,cur='title',S=null,timer=null;
+const mtof=m=>440*Math.pow(2,(m-69)/12);
+function init(){
+  if(ctx)return true;
+  try{ctx=new AC()}catch(e){return false}
+  const comp=ctx.createDynamicsCompressor();comp.threshold.value=-14;comp.ratio.value=4;
+  master=ctx.createGain();master.gain.value=enabled?.8:0;master.connect(comp);comp.connect(ctx.destination);
+  const len=Math.floor(ctx.sampleRate*2.6),ir=ctx.createBuffer(2,len,ctx.sampleRate);
+  for(let c=0;c<2;c++){const d=ir.getChannelData(c);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.6)}
+  rev=ctx.createConvolver();rev.buffer=ir;rev.connect(master);
+  noiseBuf=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate);
+  const nd=noiseBuf.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
+  return true;
+}
+function mkbus(wet,vol){const g=ctx.createGain();g.gain.value=vol;const w=ctx.createGain();w.gain.value=wet;g.connect(master);g.connect(w);w.connect(rev);return{g,w}}
+function tone(B,f,t,dur,type,vol,o={}){
+  const os=ctx.createOscillator(),g=ctx.createGain(),a=o.a??.01,r=o.r??.1;
+  os.type=type;os.frequency.setValueAtTime(f,t);if(o.glide)os.frequency.exponentialRampToValueAtTime(o.glide,t+dur);if(o.det)os.detune.value=o.det;
+  g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol,t+a);
+  if(o.pluck)g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  else{g.gain.setValueAtTime(vol,Math.max(t+a,t+dur-r));g.gain.linearRampToValueAtTime(.0001,t+dur)}
+  let n=os;if(o.lp){const fl=ctx.createBiquadFilter();fl.type='lowpass';fl.frequency.value=o.lp;os.connect(fl);n=fl}
+  n.connect(g);g.connect(B.g);os.start(t);os.stop(t+dur+.05);
+}
+function kick(B,t){const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.setValueAtTime(140,t);o.frequency.exponentialRampToValueAtTime(42,t+.14);g.gain.setValueAtTime(.55,t);g.gain.exponentialRampToValueAtTime(.001,t+.28);o.connect(g);g.connect(B.g);o.start(t);o.stop(t+.3)}
+function hitN(B,t,dur,vol,hp){const s=ctx.createBufferSource();s.buffer=noiseBuf;const f=ctx.createBiquadFilter();f.type='highpass';f.frequency.value=hp;const g=ctx.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);s.connect(f);f.connect(g);g.connect(B.g);s.start(t,Math.random());s.stop(t+dur+.02)}
+const snare=(B,t)=>{hitN(B,t,.16,.16,1400);tone(B,190,t,.1,'triangle',.12,{pluck:1,a:.002})},hat=(B,t)=>hitN(B,t,.045,.05,7000);
+function rumble(B,t,o){
+  const s=ctx.createBufferSource();s.buffer=noiseBuf;s.loop=true;
+  const fl=ctx.createBiquadFilter();fl.type='lowpass';fl.frequency.setValueAtTime(o.f0,t);fl.frequency.exponentialRampToValueAtTime(o.f1,t+o.rise);
+  const g=ctx.createGain();g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(o.v,t+o.rise);
+  let end=t+(o.len||8);
+  if(o.hold!==undefined){g.gain.setValueAtTime(o.v,t+o.hold);g.gain.linearRampToValueAtTime(.0001,t+o.hold+(o.fade||.6));end=t+o.hold+(o.fade||.6)}
+  s.connect(fl);fl.connect(g);g.connect(B.g);s.start(t);s.stop(end+.1);
+}
+const WCH=[[62,66,69],[61,64,69],[62,66,71],[62,67,71]],WROOT=[38,45,47,43];
+const WMEL=[[[0,74,1.5],[1.5,76,.5],[2,78,1],[3,81,1]],[[0,76,1],[1,78,1],[2,81,1.5],[3.5,78,.5]],[[0,78,1.5],[1.5,76,.5],[2,74,1],[3,73,1]],[[0,74,1],[1,79,1],[2,78,1],[3,76,1]]];
+const SC={
+ /* calm, wondering pads with soft bells */
+ title:{bpm:60,wet:.7,vol:.8,bar(S,n,t,b){
+   const ch=[[50,57,64,65,69],[46,53,57,60,65],[41,53,57,60,64],[48,55,60,62,67]][n%4];
+   ch.forEach(m=>tone(S.bus,mtof(m),t,4*b+1.2,'triangle',.035,{a:1.4,r:1.6}));
+   [[.5,2],[1.25,3],[2,4],[2.75,3],[3.5,2]].forEach(([o,i])=>tone(S.bus,mtof(ch[i]+12),t+o*b,1.8,'sine',.05,{pluck:1,a:.005}));
+ }},
+ /* heroic march while the crew walks to the rocket */
+ walk:{bpm:104,wet:.18,vol:1,bar(S,n,t,b){
+   const k=n%4,B=S.bus,ch=WCH[k],root=WROOT[k];
+   kick(B,t);kick(B,t+2*b);snare(B,t+b);snare(B,t+3*b);for(let i=0;i<8;i++)hat(B,t+i*b/2);
+   tone(B,mtof(root),t,1.4*b,'triangle',.22,{a:.01,r:.2});tone(B,mtof(root+12),t+2*b,.9*b,'triangle',.16,{a:.01,r:.15});tone(B,mtof(root),t+3*b,.9*b,'triangle',.16,{a:.01,r:.15});
+   ch.forEach(m=>tone(B,mtof(m-12),t,4*b,'sawtooth',.018,{lp:900,a:.12,r:.3}));
+   WMEL[k].forEach(([o,m,d])=>{tone(B,mtof(m),t+o*b,d*b,'sawtooth',.026,{lp:2200,a:.04,r:.1,det:-6});tone(B,mtof(m),t+o*b,d*b,'sawtooth',.026,{lp:2200,a:.04,r:.1,det:6})});
+ }},
+ /* countdown beeps, engine rumble and a rising, driving score */
+ launch:{bpm:120,wet:.25,vol:1,start(S,t0){const B=S.bus;
+   [0,1,2].forEach(i=>tone(B,880,t0+i,.16,'sine',.25,{a:.005,r:.05}));
+   tone(B,1320,t0+3,.7,'sine',.28,{a:.01,r:.3});tone(B,660,t0+3,.7,'triangle',.15,{a:.01,r:.3});
+   rumble(B,t0+2,{f0:70,f1:900,v:.55,rise:2.5,len:9});
+   tone(B,55,t0+2.5,7,'sawtooth',.06,{glide:330,lp:1200,a:2.5,r:.5});
+  },bar(S,n,t,b){
+   if(t<S.t0+2)return;const B=S.bus,f=Math.min(1,(t-S.t0)/6+.4),pat=[38,38,45,38,38,38,45,43];
+   pat.forEach((m,i)=>tone(B,mtof(m),t+i*b/2,.2,'sawtooth',.07*f,{lp:520,a:.005,r:.08}));
+   kick(B,t);kick(B,t+b);kick(B,t+2*b);kick(B,t+3*b);
+   [50,57,62,65,69].forEach(m=>tone(B,mtof(m),t,4*b+.2,'sawtooth',.02*f,{lp:1400,a:.6,r:.5}));
+ }},
+ /* floating, sparkling arpeggios for the trip through the Solar System */
+ space:{bpm:72,wet:.75,vol:1,bar(S,n,t,b){
+   const k=n%4,B=S.bus,bass=[38,35,43,45][k],ch=[[62,66,69,73],[59,62,66,69],[55,59,62,66],[57,61,64,66]][k];
+   ch.forEach(m=>tone(B,mtof(m),t,4*b+1.5,'triangle',.03,{a:1.5,r:1.5}));
+   tone(B,mtof(bass),t,4*b,'sine',.18,{a:.3,r:.5});
+   [0,1,2,3,2,1,3,2].forEach((idx,i)=>tone(B,mtof(ch[idx]+(i%4===3?24:12)),t+i*b/2,1.6,'sine',.05,{pluck:1,a:.004}));
+   if(n%2)tone(B,mtof(ch[3]+36),t+2*b,2,'sine',.03,{pluck:1,a:.004});
+ }},
+ /* thruster roar, then a bright chime and a gentle victory theme at touchdown */
+ land:{bpm:80,wet:.55,vol:1,start(S,t0){const B=S.bus;
+   rumble(B,t0,{f0:260,f1:260,v:.22,rise:.6,hold:7,fade:.6});
+   tone(B,mtof(40),t0,7,'sawtooth',.03,{lp:300,a:.5,r:.5});
+   [74,78,81,86,90].forEach((m,i)=>tone(B,mtof(m),t0+7.05+i*.17,2.4,'sine',.1,{pluck:1,a:.004}));
+   [50,57,62,66,69].forEach(m=>tone(B,mtof(m),t0+7,9,'triangle',.05,{a:.8,r:2}));
+   tone(B,mtof(38),t0+7,9,'sine',.16,{a:.4,r:2});
+  },bar(S,n,t,b){
+   if(n<3)return;const B=S.bus,k=(n-3)%4,ch=WCH[k];
+   ch.forEach(m=>tone(B,mtof(m),t,4*b,'sine',.035,{a:.5,r:.8}));
+   tone(B,mtof(WROOT[k]),t,3*b,'triangle',.14,{a:.05,r:.4});
+   WMEL[k].forEach(([o,m,d])=>tone(B,mtof(m),t+o*b,d*b+.4,'triangle',.05,{pluck:1,a:.01}));
+ }}
+};
+function pump(){if(!S||!ctx)return;const sc=SC[S.name];while(S.next<ctx.currentTime+.6){sc.bar&&sc.bar(S,S.n,S.next,60/sc.bpm);S.next+=4*60/sc.bpm;S.n++}}
+function stop(){if(!S)return;const b=S.bus,t=ctx.currentTime;b.g.gain.cancelScheduledValues(t);b.g.gain.setValueAtTime(b.g.gain.value,t);b.g.gain.linearRampToValueAtTime(0,t+.9);setTimeout(()=>{try{b.g.disconnect();b.w.disconnect()}catch(e){}},1500);S=null}
+function scene(name){
+  cur=name;if(!ctx)return;stop();const sc=SC[name];if(!sc)return;
+  const t0=ctx.currentTime+.08;S={name,bus:mkbus(sc.wet,sc.vol),n:0,next:t0,t0};
+  sc.start&&sc.start(S,t0);if(!timer)timer=setInterval(pump,50);pump();
+}
+function unlock(){if(!init())return;if(ctx.state==='suspended')ctx.resume();if(!S)scene(cur)}
+['pointerdown','touchend','keydown','click'].forEach(e=>addEventListener(e,unlock,{passive:true}));
+document.addEventListener('visibilitychange',()=>{if(!ctx)return;document.hidden?ctx.suspend():(enabled&&ctx.resume())});
+const btn=document.createElement('button');btn.id='mute';btn.textContent='🔊';btn.setAttribute('aria-label','Sound on or off');
+btn.onclick=()=>{enabled=!enabled;btn.textContent=enabled?'🔊':'🔇';if(!init())return;master.gain.cancelScheduledValues(ctx.currentTime);master.gain.linearRampToValueAtTime(enabled?.8:0,ctx.currentTime+.2)};
+document.body.appendChild(btn);
+const _go=go;go=function(s){_go(s);scene(s)};
+window.MoonMusic={state:()=>({ctx:ctx&&ctx.state,scene:S&&S.name,enabled})};
+})();
+</script></body></html>

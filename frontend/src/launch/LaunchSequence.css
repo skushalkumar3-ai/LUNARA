@@ -1,0 +1,196 @@
+
+.lunara-launch {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow: hidden;
+  background: #030711;
+  color: #f5f3ee;
+  font-family: Inter, "Segoe UI", sans-serif;
+  isolation: isolate;
+}
+
+.lunara-launch *,
+.lunara-launch *::before,
+.lunara-launch *::after {
+  box-sizing: border-box;
+}
+
+.lunara-launch__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.lunara-launch::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.58), transparent 35%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.68), transparent 40%),
+    radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.35));
+}
+
+.lunara-launch__top {
+  position: absolute;
+  z-index: 2;
+  top: clamp(48px, 10vh, 110px);
+  left: 20px;
+  right: 20px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.lunara-launch__eyebrow {
+  margin-bottom: 14px;
+  color: #e8b96c;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.38em;
+}
+
+.lunara-launch__top h1 {
+  margin: 0;
+  color: #f7f2e8;
+  font-size: clamp(30px, 5.5vw, 66px);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  line-height: 1.05;
+  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.75);
+}
+
+.lunara-launch__top p {
+  margin: 14px auto 0;
+  color: rgba(238, 240, 246, 0.82);
+  font-size: clamp(12px, 1.5vw, 16px);
+  letter-spacing: 0.06em;
+  text-shadow: 0 2px 12px #000;
+}
+
+.lunara-launch__bottom {
+  position: absolute;
+  z-index: 3;
+  left: 20px;
+  right: 20px;
+  bottom: clamp(38px, 8vh, 85px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+}
+
+.lunara-launch__caption {
+  color: rgba(236, 226, 207, 0.78);
+  font-family: "Courier New", monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+}
+
+.lunara-launch__button {
+  min-width: 220px;
+  padding: 16px 27px;
+  border: 1px solid rgba(255, 211, 132, 0.55);
+  border-radius: 3px;
+  background: linear-gradient(135deg, #e5ad5d, #b66b35);
+  color: #15100b;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  cursor: pointer;
+  box-shadow: 0 8px 35px rgba(212, 139, 62, 0.25);
+  transition:
+    transform 180ms ease,
+    filter 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.lunara-launch__button span {
+  display: inline-block;
+  margin-left: 12px;
+  font-size: 16px;
+}
+
+.lunara-launch__button:hover {
+  transform: translateY(-3px);
+  filter: brightness(1.12);
+  box-shadow: 0 12px 40px rgba(212, 139, 62, 0.4);
+}
+
+.lunara-launch__button:active {
+  transform: translateY(0);
+}
+
+.lunara-launch__mute {
+  position: absolute;
+  z-index: 4;
+  top: 22px;
+  right: 24px;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  background: rgba(5, 10, 20, 0.55);
+  color: #f3d6a4;
+  font-size: 19px;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+}
+
+.lunara-launch__mute:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.lunara-launch__coordinates {
+  position: absolute;
+  z-index: 2;
+  right: 25px;
+  bottom: 20px;
+  color: rgba(232, 225, 210, 0.48);
+  font-family: "Courier New", monospace;
+  font-size: 9px;
+  letter-spacing: 0.13em;
+}
+
+@media (max-width: 600px) {
+  .lunara-launch__top {
+    top: 12vh;
+  }
+
+  .lunara-launch__top h1 {
+    letter-spacing: 0.07em;
+  }
+
+  .lunara-launch__top p {
+    max-width: 300px;
+    line-height: 1.6;
+  }
+
+  .lunara-launch__caption {
+    font-size: 8px;
+    letter-spacing: 0.13em;
+  }
+
+  .lunara-launch__button {
+    min-width: 205px;
+    padding: 15px 20px;
+  }
+
+  .lunara-launch__coordinates {
+    right: 12px;
+    bottom: 10px;
+    font-size: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lunara-launch__button {
+    transition: none;
+  }
+}
